@@ -1,26 +1,25 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CFLAGS = -Wall -Wextra -g -I./include -std=c11 -D_DARWIN_C_SOURCE
+LDFLAGS = -lpthread -lsqlite3
 SRC_DIR = src
-OUT = tcp_server
+OBJ_DIR = obj
+BIN_DIR = bin
 
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(SRCS:.c=.o)
+SOURCES = $(wildcard $(SRC_DIR)/*.c)
+OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SOURCES))
+TARGET = $(BIN_DIR)/server
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-    LDFLAGS = -lpthread
-endif
-ifeq ($(UNAME_S),Darwin)
-    LDFLAGS = -lpthread
-endif
-ifeq ($(OS),Windows_NT)
-    LDFLAGS = -lws2_32
-endif
+all: $(TARGET)
 
-all: $(OUT)
+$(TARGET): $(OBJECTS)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-$(OUT): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OUT) $(SRC_DIR)/*.o
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+.PHONY: all clean
