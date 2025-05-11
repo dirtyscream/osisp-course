@@ -52,7 +52,6 @@ void handle_file_transfer_mode(int client_socket) {
         else if (strcmp(buffer, "list") == 0) {
             DIR *dir;
             struct dirent *ent;
-            
             if ((dir = opendir(FILE_DIR)) != NULL) {
                 send_message(client_socket, "Available files:\n");
                 int file_count = 0;
@@ -72,7 +71,6 @@ void handle_file_transfer_mode(int client_socket) {
                         }
                     }
                 }
-                
                 if (file_count == 0) {
                     send_message(client_socket, "No files available\n");
                 }
@@ -85,18 +83,13 @@ void handle_file_transfer_mode(int client_socket) {
             char filename[MAX_FILENAME_LEN];
             strncpy(filename, buffer + 9, MAX_FILENAME_LEN - 1);
             filename[MAX_FILENAME_LEN - 1] = '\0';
-
             char filepath[PATH_MAX];
-            snprintf(filepath, sizeof(filepath), "%s%s", FILE_DIR, filename);
-            
-            
+            snprintf(filepath, sizeof(filepath), "%s%s", FILE_DIR, filename);  
             struct stat st;
             if (stat(filepath, &st) != 0 || !S_ISREG(st.st_mode)) {
                 send_message(client_socket, "Error: File not found");
                 continue;
-            }
-
-            
+            } 
             int fd = open(filepath, O_RDONLY);
             if (fd < 0) {
                 send_message(client_socket, "Error: Cannot open file");
@@ -124,42 +117,43 @@ void handle_file_transfer_mode(int client_socket) {
             }
         }
         else if (strncmp(buffer, "upload ", 7) == 0) {
-            char* filename = strrchr(buffer + 7, '/');
-            filename = filename ? filename + 1 : buffer + 7;
-            char dest_path[PATH_MAX];
-            snprintf(dest_path, sizeof(dest_path), "%s/%s", FILE_DIR, filename);
-            int fd = open(dest_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            char filename[256];
+            sscanf(buffer + 7, "%255s", filename);
+            printf("Upload request for: %s\n", filename);
+            char filepath[PATH_MAX];
+            snprintf(filepath, sizeof(filepath), "%s/%s", FILE_DIR, filename);
+            printf("Full destination path: %s\n", filepath);
+            int fd = open(filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd == -1) {
+                perror("open() failed"); 
                 send_message(client_socket, "Upload failed: cannot create file\n");
-                return;  
+                continue;
             }
-            char file_buffer[BUFFER_SIZE];
+            printf("File opened for writing, fd=%d\n", fd);
+            char buf[BUFFER_SIZE];
             ssize_t bytes_received;
-            struct timeval tv;
-            tv.tv_sec = 10;
-            tv.tv_usec = 0;
-            setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-            
-            while ((bytes_received = recv(client_socket, file_buffer, sizeof(file_buffer), 0)) > 0) {
-                if (bytes_received > 5 && strncmp(file_buffer, "ftp>", 4) == 0) {
+            off_t total = 0;
+            while ((bytes_received = recv(client_socket, buf, sizeof(buf), 0)) > 0) {
+                ssize_t written = write(fd, buf, bytes_received);
+                if (written != bytes_received) {
+                    perror("write() failed");
                     break;
                 }
-                write(fd, file_buffer, bytes_received);
+                total += written;
+                printf("Received %zd bytes (total: %ld)\n", bytes_received, total);
             }
-            
             close(fd);
-            
-            // Восстанавливаем бесконечный таймаут
-            tv.tv_sec = 0;
-            setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-            
+            printf("Upload completed. Total bytes: %ld\n", total);
             send_message(client_socket, "Upload complete\n");
-            return;  // Явный возврат в главное меню
+            if (access(filepath, F_OK) == 0) {
+                printf("File verification: EXISTS\n");
+            } else {
+                printf("File verification: MISSING (errno=%d)\n", errno);
+            }
         }
         else {
             send_message(client_socket, "Error: Unknown command\n");
         }
     }
-
     send_message(client_socket, "Exiting file transfer mode\n");
 }

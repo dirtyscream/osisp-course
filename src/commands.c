@@ -84,26 +84,21 @@ void execute_command(int client_socket, const char* command) {
         close(pipe_stderr[1]);
         char buffer[BUFFER_SIZE];
         ssize_t n;
-
         
         while ((n = read(pipe_stdout[0], buffer, sizeof(buffer))) > 0) {
             send(client_socket, buffer, n, 0);
         }
 
-        
         while ((n = read(pipe_stderr[0], buffer, sizeof(buffer))) > 0) {
             send(client_socket, buffer, n, 0);
         }
-
-        
+     
         close(pipe_stdout[0]);
         close(pipe_stderr[0]);
 
-        
         int status;
         waitpid(pid, &status, 0);
 
-        
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
             char exit_msg[64];
             snprintf(exit_msg, sizeof(exit_msg), "Command ended with code %d\n", WEXITSTATUS(status));
@@ -120,32 +115,23 @@ void handle_command_mode(int client_socket) {
     send_message(client_socket, "=== Command Mode (fork/exec implementation) ===\n");
     send_message(client_socket, "Type 'exit' to quit\n");
 
-    while (1) {
-        
+    while (1) { 
         char prompt[PATH_MAX + 64];
         snprintf(prompt, sizeof(prompt), "user@server:%s$ ", session.cwd);
         send_message(client_socket, prompt);
-
-        
         ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
         if (bytes_received <= 0) {
             break;  
         }
         buffer[bytes_received] = '\0';
         buffer[strcspn(buffer, "\n\r")] = '\0';  
-
-        
         if (strcmp(buffer, "exit") == 0) {
             send_message(client_socket, "Exiting command mode...\n");
             break;
         }
-
-        
         if (strlen(buffer) == 0) {
             continue;
         }
-
-        
         execute_command(client_socket, buffer);
     }
 }
