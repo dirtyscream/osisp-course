@@ -14,7 +14,7 @@ void init_database() {
     int rc = sqlite3_open("../db/auth.db", &db);
     
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "Не удалось открыть базу данных: %s\n", sqlite3_errmsg(db));
+        fprintf(stderr, "Cannot open the database: %s\n", sqlite3_errmsg(db));
         exit(1);
     }
     

@@ -1,6 +1,11 @@
 {
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
-        "server.h": "c"
+        "*.dbclient-js": "javascript",
+        "server.h": "c",
+        "chat.h": "c",
+        "auth.h": "c",
+        "commands.h": "c",
+        "stdlib.h": "c"
     }
 }

@@ -2,6 +2,8 @@
 #define CHAT_H
 
 #include <pthread.h>
+#include <stdbool.h>
+#include <sys/socket.h>
 
 #define BUFFER_SIZE 1024
 
