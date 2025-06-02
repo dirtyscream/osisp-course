@@ -2,6 +2,5 @@
 *.o
 obj/
 bin/
-*.docx
 files/
 Схемы/
