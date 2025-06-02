@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>  // Добавлено для exit()
-#include <stdbool.h> // Добавлено для bool
+#include <stdlib.h> 
+#include <stdbool.h>
 
 extern pthread_mutex_t db_mutex;
 
@@ -48,29 +48,6 @@ bool authenticate_user(const char* username, const char* password) {
     
     rc = sqlite3_step(stmt);
     bool result = (rc == SQLITE_ROW);
-    
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    
-    return result;
-}
-
-bool register_user(const char* username, const char* password) {
-    sqlite3* db;
-    sqlite3_stmt* stmt;
-    int rc = sqlite3_open("../db/auth.db", &db);
-    
-    const char* sql = "INSERT INTO users(username, password) VALUES(?, ?);";
-    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
-    
-    sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, password, -1, SQLITE_STATIC);
-    
-    pthread_mutex_lock(&db_mutex);
-    rc = sqlite3_step(stmt);
-    pthread_mutex_unlock(&db_mutex);
-    
-    bool result = (rc == SQLITE_DONE);
     
     sqlite3_finalize(stmt);
     sqlite3_close(db);
